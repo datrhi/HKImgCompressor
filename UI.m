@@ -176,9 +176,9 @@ else
         Block = blockproc(I,[8 8],dcthieu);
         B2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
         if(handles.checkbox2.Value)
-            R2 = blockproc(R2,[8 8],@(x) x.data*mask);
-            G2 = blockproc(G2,[8 8],@(x) x.data*mask);
-            B2 = blockproc(B2,[8 8],@(x) x.data*mask);
+            R2 = blockproc(R2,[8 8],@(x) mask.*x.data);
+            G2 = blockproc(G2,[8 8],@(x) mask.*x.data);
+            B2 = blockproc(B2,[8 8],@(x) mask.*x.data);
         end  
           
         %%%
