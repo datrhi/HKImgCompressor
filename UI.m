@@ -22,7 +22,7 @@ function varargout = UI(varargin)
 
 % Edit the above text to modify the response to help UI
 
-% Last Modified by GUIDE v2.5 30-Mar-2021 19:28:54
+% Last Modified by GUIDE v2.5 30-Mar-2021 22:38:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -234,13 +234,17 @@ function deleteButton_Callback(hObject, eventdata, handles)
 cla(handles.ogImg,'reset');
 cla(handles.comImg,'reset');
 cla(handles.decomImg,'reset');
+set(handles.ogImg,'visible','off');
+set(handles.comImg,'visible','off');
+set(handles.decomImg,'visible','off');
 set(handles.comTime,'String','');
 set(handles.comRatio,'String','');
 set(handles.ogImgSize,'String','');
 set(handles.comImgSize,'String','');
-set(handles.ogImg,'visible','off');
-set(handles.comImg,'visible','off');
-set(handles.decomImg,'visible','off');
+set(handles.tMSE,'String','');
+set(handles.tPSNR,'String','');
+
+
 clear all;
 
 
@@ -335,7 +339,7 @@ function checkbox2_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in decomButton.
 function decomButton_Callback(hObject, eventdata, handles)
-
+global I1;
 global ogImage;
 global N;
 global outputFile;
@@ -373,4 +377,54 @@ else
     set(handles.comImgSize,'String',comImage);  
     comRat = ogImage/comImage;           
     set(handles.comRatio,'String',comRat); 
+end
+mse = immse(I1,N);
+psnr = 10*log10(255*255/mse);
+set(handles.tMSE,'String',mse);
+set(handles.tPSNR,'String',psnr);
+
+
+
+function tMSE_Callback(hObject, eventdata, handles)
+% hObject    handle to tMSE (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of tMSE as text
+%        str2double(get(hObject,'String')) returns contents of tMSE as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function tMSE_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tMSE (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function tPSNR_Callback(hObject, eventdata, handles)
+% hObject    handle to tPSNR (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of tPSNR as text
+%        str2double(get(hObject,'String')) returns contents of tPSNR as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function tPSNR_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tPSNR (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end
