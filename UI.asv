@@ -117,10 +117,12 @@ global T;
 global R3;
 global B3;
 global G3;
-
+global quant;
+global dequant;
 T = dctmtx(8);
 dcthieu = @(x) T*x.data*T';
-
+quant = @(x) round(x.data./q_mtx);
+dequant = @(x) round(x.data.*q_mtx)
 idcthieu = @(x) T'*x.data*T;
 q_mtx =     [16 11 10 16 24 40 51 61; 
             12 12 14 19 26 58 60 55;
@@ -175,23 +177,29 @@ else
         I = (double(I)-128);
         Block = blockproc(I,[8 8],dcthieu);
         B2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
-        if(handles.checkbox2.Value)
-            R2 = blockproc(R2,[8 8],@(x) x.data*mask);
-            G2 = blockproc(G2,[8 8],@(x) x.data*mask);
-            B2 = blockproc(B2,[8 8],@(x) x.data*mask);
-        end  
+        
+              
           
         %%%
-        N(:,:,:)= cat(3,R2,G2,B2); %Noi 3 kenh RGB lai voi nhau 
-        R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
-        G = blockproc(G2,[8 8],@(x) round(x.data.*q_mtx));
-        B = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
-       
+        if(handles.checkbox2.Value)
+            R3 = blockproc(R2,[8 8],@(x) x.data*mask);
+            G3 = blockproc(G2,[8 8],@(x) x.data*mask);
+            B3 = blockproc(B2,[8 8],@(x) x.data*mask);
+            N(:,:,:)= cat(3,R3,G3,B3); %Noi 3 kenh RGB lai voi nhau  
+            R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
+            G = blockproc(G3,[8 8],@(x) round(x.data.*q_mtx));
+            B = blockproc(B3,[8 8],@(x) round(x.data.*q_mtx));
+        else
+            N(:,:,:)= cat(3,R2,G2,B2); %Noi 3 kenh RGB lai voi nhau 
+            R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
+            G = blockproc(G2,[8 8],@(x) round(x.data.*q_mtx));
+            B = blockproc(B3,[8 8],@(x) round(x.data.*q_mtx));
+        end
+        set(handles.comTime,'String',num2str(toc));            
+                
+              
         axes(handles.comImg);               
         imshow(N); 
-        close(load);                      
-        toc;
-        set(handles.comTime,'String',num2str(toc));
         [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
         imwrite(N,[pathname,outputFile]);
         %Giai nen
@@ -202,7 +210,10 @@ else
         
         B2 = uint8(blockproc(B,[8 8],idcthieu)+128);
         N = cat(3,R2,G2,B2);
-        
+        close(load);          
+             
+        toc;
+     
     else
         I1 = imread(inputFile);
         I = (double(I1)-128); % anh gray -128 -> 128 
@@ -210,10 +221,7 @@ else
         
         B = blockproc(I,[8 8],dcthieu); %bien doi dct
         B2 = blockproc(B,[8 8],@(x) round(x.data./q_mtx)); % LUONG TU HOA
-        B3 = B2;
-        if(handles.checkbox2.Value)
-            B3 = blockproc(B2,[8 8],@(x) x.data*mask);
-        end
+        B3 = blockproc(B2,[8 8],@(x) x.data*mask);
         close(load);          
              
         toc;
