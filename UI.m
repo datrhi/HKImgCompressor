@@ -22,7 +22,7 @@ function varargout = UI(varargin)
 
 % Edit the above text to modify the response to help UI
 
-% Last Modified by GUIDE v2.5 28-Mar-2021 16:23:28
+% Last Modified by GUIDE v2.5 30-Mar-2021 12:54:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -111,10 +111,29 @@ global N;
 global outputFile;
 global comImage;
 global comRat;
-
+mask10 = [1 1 1 1 0 0 0 0 
+          1 1 1 0 0 0 0 0
+          1 1 0 0 0 0 0 0            
+          1 0 0 0 0 0 0 0             
+          0 0 0 0 0 0 0 0            
+          0 0 0 0 0 0 0 0
+          0 0 0 0 0 0 0 0
+          0 0 0 0 0 0 0 0];
+mask1 = [1 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0            
+         0 0 0 0 0 0 0 0             
+         0 0 0 0 0 0 0 0            
+         0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0];
 myicon = imread('loading.jpg');
-load = msgbox('Program is working. Please wait a minute !','Time','custom',myicon);
-   
+load = msgbox('Cho ti nhe ^^','Waiting','custom',myicon);
+if(handles.checkbox2.Value)
+    mask = mask10;
+else
+    mask = mask1;
+end
 tic;
             
 if~(ischar(inputFile))
@@ -122,87 +141,111 @@ if~(ischar(inputFile))
     errordlg('Ban hay chon buc anh');
             
 else
-    
-    I1 = imread(inputFile);
+    if(handles.checkBox.Value)   
+        I1 = imread(inputFile);   
+        I = I1(:,:,1);             
+        I = im2double(I);  %Chuyen sang kieu double
+                
+        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
+                
+        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi     
+        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
+      
+        R = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
 
-                
-    I = I1(:,:,1);
-                
-    I = im2double(I);  %Chuyen sang kieu double
-                
-    MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
-                
-    Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
-    mask = [1 1 1 1 0 0 0 0 
-            1 1 1 0 0 0 0 0
-            1 1 0 0 0 0 0 0
-            1 0 0 0 0 0 0 0 
-            0 0 0 0 0 0 0 0 
-            0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0];   %Mat na giu lai 10 he so DCT
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+            
+        I = I1(:,:,2);
         
-    B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
-                
-    R = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    I = I1(:,:,2);
-    I = im2double(I);  %Chuyen sang kieu double               
-    MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8                
-    Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi             
-    mask = [1 1 1 1 0 0 0 0                      
-            1 1 1 0 0 0 0 0                    
-            1 1 0 0 0 0 0 0                     
-            1 0 0 0 0 0 0 0                      
-            0 0 0 0 0 0 0 0                     
-            0 0 0 0 0 0 0 0                   
-            0 0 0 0 0 0 0 0                   
-            0 0 0 0 0 0 0 0];   %Mat na giu lai 10 he so DCT
-
-    B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT                   
-    G = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    I = I1(:,:,3);                
-    I = im2double(I);  %Chuyen sang kieu double
-                
-    MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
-                
-    Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
-             
-    mask = [1 1 1 1 0 0 0 0                      
-            1 1 1 0 0 0 0 0  
-            1 1 0 0 0 0 0 0                
-            1 0 0 0 0 0 0 0    
-            0 0 0 0 0 0 0 0 
-            0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0];   %Mat na giu lai 10 he so DCT
-
-    B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
-               
-    B = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+        I = im2double(I);  %Chuyen sang kieu double               
        
-    close(load);         
+        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8                
+        
+        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi             
+
+        
+   
+        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT                   
+      
+        G = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+
+             
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+                
+        I = I1(:,:,3);                
+               
+        I = im2double(I);  %Chuyen sang kieu double
+
+              
+        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
+  
+           
+        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
+
+             
+        
+
+        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
     
-    toc;          
-    set(handles.comTime,'String',num2str(toc));
+        B = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+
+              
+        close(load);          
+             
+        toc;
+        set(handles.comTime,'String',num2str(toc));            
+        N(:,:,:)= cat(3,R,G,B); %Noi 3 kenh RGB lai voi nhau          
+              
+        axes(handles.comImg);               
+        imshow(N);     
+     
+        [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
+        imwrite(N,[pathname,outputFile]);               
+        info = imfinfo(fullfile(pathname,outputFile));
+        
+        comImage =  (info.FileSize)/1024;
+        
+        set(handles.comImgSize,'String',comImage);
+       
+        comRat = ogImage/comImage;          
+  
+        set(handles.comRatio,'String',comRat); 
     
-    N(:,:,:)= cat(3,R,G,B); %Noi 3 kenh RGB lai voi nhau          
-    axes(handles.comImg);     
-    imshow(N);     
-    [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');       
-    imwrite(N,[pathname,outputFile]);     
-    info = imfinfo(fullfile(pathname,outputFile));
-          
-    comImage =  (info.FileSize)/1024;
-         
-    set(handles.comImgSize,'String',comImage);
-    comRat = ogImage/comImage;          
-    set(handles.comRatio,'String',comRat); 
+    else
+        I1 = imread(inputFile);
+        I = rgb2gray(I1);
+        I = im2double(I);  %Chuyen sang kieu double
+                
+        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
+                
+        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
+            
+        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
+      
+        N = blkproc(B2,[8 8],'P1*x*P2',MT',MT); 
+        close(load);          
+             
+        toc;
+        set(handles.comTime,'String',num2str(toc));  
+        axes(handles.comImg);               
+        imshow(N);     
+     
+        [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
+        imwrite(N,[pathname,outputFile]);               
+        info = imfinfo(fullfile(pathname,outputFile));
+        
+        comImage =  (info.FileSize)/1024;
+        
+        set(handles.comImgSize,'String',comImage);
+       
+        comRat = ogImage/comImage;          
+  
+        set(handles.comRatio,'String',comRat); 
+        
 end 
+end
 
 
 % --- Executes on button press in deleteButton.
@@ -273,3 +316,35 @@ function ogImgSize_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+
+% --------------------------------------------------------------------
+function help_Callback(hObject, eventdata, handles)
+% hObject    handle to help (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function Untitled_1_Callback(hObject, eventdata, handles)
+about = msgbox({'Dang Trung Hieu - 18020498';'Ngo Minh Khanh - 18020698'},'Info');
+
+
+% --- Executes on button press in checkBox.
+function checkBox_Callback(hObject, eventdata, handles)
+% hObject    handle to checkBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkBox
+
+
+% --- Executes on button press in checkbox2.
+function checkbox2_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox2
