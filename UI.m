@@ -114,6 +114,12 @@ global outputFile;
 global comImage;
 global comRat;
 global q_mtx;
+global dcthieu;
+global idcthieu;
+global T;
+T = dctmtx(8);
+dcthieu = @(x) T*x.data*T';
+idcthieu = @(x) T'*x.data*T;
 q_mtx =     [16 11 10 16 24 40 51 61; 
             12 12 14 19 26 58 60 55;
             14 13 16 24 40 57 69 56; 
@@ -137,7 +143,7 @@ else
         I1 = imread(inputFile);   
         I = I1(:,:,1);             
         I = (double(I)-128);
-        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        Block = blockproc(I,[8 8],dcthieu);
         R2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,7 +152,7 @@ else
         I = I1(:,:,2);
         
         I = (double(I)-128);
-        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        Block = blockproc(I,[8 8],dcthieu);
         G2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
              
@@ -156,7 +162,7 @@ else
         I = I1(:,:,3);                
                
         I = (double(I)-128);
-        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        Block = blockproc(I,[8 8],dcthieu);
         B2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
               
@@ -172,18 +178,20 @@ else
         imwrite(N,[pathname,outputFile]);
         %Giai nen
         R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
-        R2 = uint8(blockproc(R,[8 8],@(x) idct2(x.data))+128);
+        R2 = uint8(blockproc(R,[8 8],idcthieu)+128);
         G = blockproc(G2,[8 8],@(x) round(x.data.*q_mtx));
-        G2 = uint8(blockproc(G,[8 8],@(x) idct2(x.data))+128);
+        G2 = uint8(blockproc(G,[8 8],idcthieu)+128);
         B = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
-        B2 = uint8(blockproc(B,[8 8],@(x) idct2(x.data))+128);
+        B2 = uint8(blockproc(B,[8 8],idcthieu)+128);
+        N = cat(3,R2,G2,B2);
+        toc;
      
     else
         I1 = imread(inputFile);
         I = (double(I1)-128); % anh gray -128 -> 128 
 
         
-        B = blockproc(I,[8 8],@(x) dct2(x.data)); %bien doi dct
+        B = blockproc(I,[8 8],dcthieu); %bien doi dct
         B2 = blockproc(B,[8 8],@(x) round(x.data./q_mtx)); % LUONG TU HOA
         
         close(load);          
@@ -321,10 +329,10 @@ global outputFile;
 global comImage;
 global comRat;
 global q_mtx;
+global idcthieu;
 
 if(handles.checkBox.Value)
 
-    N = cat(3,R2,G2,B2);
     axes(handles.decomImg);               
     imshow(N);  
     [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
@@ -339,7 +347,7 @@ if(handles.checkBox.Value)
     set(handles.comRatio,'String',comRat); 
 else
     G = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
-    N = uint8(blockproc(G,[8 8],@(x) idct2(x.data))+128);
+    N = uint8(blockproc(G,[8 8],idcthieu)+128);
     axes(handles.decomImg);
     imshow(N)
     [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                    
