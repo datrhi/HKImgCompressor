@@ -22,7 +22,7 @@ function varargout = UI(varargin)
 
 % Edit the above text to modify the response to help UI
 
-% Last Modified by GUIDE v2.5 30-Mar-2021 12:54:19
+% Last Modified by GUIDE v2.5 30-Mar-2021 19:28:54
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -103,7 +103,9 @@ global Block;
 global R;
 global G;
 global B;
+global R2;
 global B2;
+global G2;
 global load;
 global myicon;
 global ogImage;
@@ -111,29 +113,19 @@ global N;
 global outputFile;
 global comImage;
 global comRat;
-mask10 = [1 1 1 1 0 0 0 0 
-          1 1 1 0 0 0 0 0
-          1 1 0 0 0 0 0 0            
-          1 0 0 0 0 0 0 0             
-          0 0 0 0 0 0 0 0            
-          0 0 0 0 0 0 0 0
-          0 0 0 0 0 0 0 0
-          0 0 0 0 0 0 0 0];
-mask1 = [1 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0            
-         0 0 0 0 0 0 0 0             
-         0 0 0 0 0 0 0 0            
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0];
+global q_mtx;
+q_mtx =     [16 11 10 16 24 40 51 61; 
+            12 12 14 19 26 58 60 55;
+            14 13 16 24 40 57 69 56; 
+            14 17 22 29 51 87 80 62;
+            18 22 37 56 68 109 103 77;
+            24 35 55 64 81 104 113 92;
+            49 64 78 87 103 121 120 101;
+            72 92 95 98 112 100 103 99];
+
 myicon = imread('loading.jpg');
 load = msgbox('Cho ti nhe ^^','Waiting','custom',myicon);
-if(handles.checkbox2.Value)
-    mask = mask10;
-else
-    mask = mask1;
-end
+
 tic;
             
 if~(ischar(inputFile))
@@ -144,31 +136,18 @@ else
     if(handles.checkBox.Value)   
         I1 = imread(inputFile);   
         I = I1(:,:,1);             
-        I = im2double(I);  %Chuyen sang kieu double
-                
-        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
-                
-        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi     
-        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
-      
-        R = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+        I = (double(I)-128);
+        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        R2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
             
         I = I1(:,:,2);
         
-        I = im2double(I);  %Chuyen sang kieu double               
-       
-        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8                
-        
-        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi             
-
-        
-   
-        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT                   
-      
-        G = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+        I = (double(I)-128);
+        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        G2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
              
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,73 +155,47 @@ else
                 
         I = I1(:,:,3);                
                
-        I = im2double(I);  %Chuyen sang kieu double
-
-              
-        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
-  
-           
-        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
-
-             
-        
-
-        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
-    
-        B = blkproc(B2,[8 8],'P1*x*P2',MT',MT); %Giai mã
+        I = (double(I)-128);
+        Block = blockproc(I,[8 8],@(x) dct2(x.data));
+        B2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
 
               
         close(load);          
              
         toc;
         set(handles.comTime,'String',num2str(toc));            
-        N(:,:,:)= cat(3,R,G,B); %Noi 3 kenh RGB lai voi nhau          
+        N(:,:,:)= cat(3,R2,G2,B2); %Noi 3 kenh RGB lai voi nhau          
               
         axes(handles.comImg);               
-        imshow(N);     
-     
+        imshow(N); 
         [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
-        imwrite(N,[pathname,outputFile]);               
-        info = imfinfo(fullfile(pathname,outputFile));
-        
-        comImage =  (info.FileSize)/1024;
-        
-        set(handles.comImgSize,'String',comImage);
-       
-        comRat = ogImage/comImage;          
-  
-        set(handles.comRatio,'String',comRat); 
-    
+        imwrite(N,[pathname,outputFile]);
+        %Giai nen
+        R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
+        R2 = uint8(blockproc(R,[8 8],@(x) idct2(x.data))+128);
+        G = blockproc(G2,[8 8],@(x) round(x.data.*q_mtx));
+        G2 = uint8(blockproc(G,[8 8],@(x) idct2(x.data))+128);
+        B = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
+        B2 = uint8(blockproc(B,[8 8],@(x) idct2(x.data))+128);
+     
     else
         I1 = imread(inputFile);
-        I = rgb2gray(I1);
-        I = im2double(I);  %Chuyen sang kieu double
-                
-        MT = dctmtx(8);     %Tinh ma tran bien doi DCT 8x8
-                
-        Block = blkproc(I,[8 8],'P1*x*P2',MT,MT');  %Thuc hien phep nhan voi moi khoi
-            
-        B2 = blkproc(Block,[8 8],'P1.*x',mask); %Luong tu hóa các he so DCT
-      
-        N = blkproc(B2,[8 8],'P1*x*P2',MT',MT); 
+        I = (double(I1)-128); % anh gray -128 -> 128 
+
+        
+        B = blockproc(I,[8 8],@(x) dct2(x.data)); %bien doi dct
+        B2 = blockproc(B,[8 8],@(x) round(x.data./q_mtx)); % LUONG TU HOA
+        
         close(load);          
              
         toc;
         set(handles.comTime,'String',num2str(toc));  
         axes(handles.comImg);               
-        imshow(N);     
+        imshow(B2);     
+        
      
         [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
-        imwrite(N,[pathname,outputFile]);               
-        info = imfinfo(fullfile(pathname,outputFile));
-        
-        comImage =  (info.FileSize)/1024;
-        
-        set(handles.comImgSize,'String',comImage);
-       
-        comRat = ogImage/comImage;          
-  
-        set(handles.comRatio,'String',comRat); 
+        imwrite(B2,[pathname,outputFile]);               
         
 end 
 end
@@ -252,12 +205,14 @@ end
 function deleteButton_Callback(hObject, eventdata, handles)
 cla(handles.ogImg,'reset');
 cla(handles.comImg,'reset');
+cla(handles.decomImg,'reset');
 set(handles.comTime,'String','');
 set(handles.comRatio,'String','');
 set(handles.ogImgSize,'String','');
 set(handles.comImgSize,'String','');
 set(handles.ogImg,'visible','off');
 set(handles.comImg,'visible','off');
+set(handles.decomImg,'visible','off');
 clear all;
 
 
@@ -348,3 +303,50 @@ function checkbox2_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox2
+
+
+% --- Executes on button press in decomButton.
+function decomButton_Callback(hObject, eventdata, handles)
+
+
+global R;
+global G;
+global B;
+global R2;
+global G2;
+global B2;
+global ogImage;
+global N;
+global outputFile;
+global comImage;
+global comRat;
+global q_mtx;
+
+if(handles.checkBox.Value)
+
+    N = cat(3,R2,G2,B2);
+    axes(handles.decomImg);               
+    imshow(N);  
+    [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
+       
+    imwrite(N,[pathname,outputFile]);               
+        
+    info = imfinfo(fullfile(pathname,outputFile));
+   
+    comImage =  (info.FileSize)/1024;     
+    set(handles.comImgSize,'String',comImage);     
+    comRat = ogImage/comImage;             
+    set(handles.comRatio,'String',comRat); 
+else
+    G = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
+    N = uint8(blockproc(G,[8 8],@(x) idct2(x.data))+128);
+    axes(handles.decomImg);
+    imshow(N)
+    [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                    
+    imwrite(N,[pathname,outputFile]);                      
+    info = imfinfo(fullfile(pathname,outputFile));
+    comImage =  (info.FileSize)/1024;       
+    set(handles.comImgSize,'String',comImage);  
+    comRat = ogImage/comImage;           
+    set(handles.comRatio,'String',comRat); 
+end
