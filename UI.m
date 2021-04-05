@@ -22,7 +22,7 @@ function varargout = UI(varargin)
 
 % Edit the above text to modify the response to help UI
 
-% Last Modified by GUIDE v2.5 30-Mar-2021 22:38:48
+% Last Modified by GUIDE v2.5 05-Apr-2021 18:08:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,49 +96,16 @@ end
 % --- Executes on button press in compressedButton.
 function compressedButton_Callback(hObject, eventdata, handles)
 global inputFile;
-global I;
-global I1;
-global MT;
-global Block;
-global R;
-global G;
-global B;
-global R2;
-global B2;
-global G2;
 global load;
 global myicon;
-global N;
 global outputFile;
-global q_mtx;
-global dcthieu;
-global idcthieu;
-global T;
-global R3;
-global B3;
-global G3;
-
-T = dctmtx(8);
-dcthieu = @(x) T*x.data*T';
-
-idcthieu = @(x) T'*x.data*T;
-q_mtx =     [16 11 10 16 24 40 51 61; 
-            12 12 14 19 26 58 60 55;
-            14 13 16 24 40 57 69 56; 
-            14 17 22 29 51 87 80 62;
-            18 22 37 56 68 109 103 77;
-            24 35 55 64 81 104 113 92;
-            49 64 78 87 103 121 120 101;
-            72 92 95 98 112 100 103 99];
-mask = [1 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0            
-         0 0 0 0 0 0 0 0             
-         0 0 0 0 0 0 0 0            
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0
-         0 0 0 0 0 0 0 0];
-
+global imgint;
+global img;
+global ogImage;
+global outputFile;
+global comImage;
+global comRat;
+global quant;
 myicon = imread('loading.jpg');
 load = msgbox('Cho ti nhe ^^','Waiting','custom',myicon);
 
@@ -151,79 +118,110 @@ if~(ischar(inputFile))
             
 else
     if(handles.checkBox.Value)   
-        I1 = imread(inputFile);   
-        I = I1(:,:,1);             
-        I = (double(I)-128);
-        Block = blockproc(I,[8 8],dcthieu);
-        R2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
+        if(handles.luminance.Value)
+            quant=1;
+        elseif(handles.chrominance.Value)
+            quant=2;
+        elseif(handles.dctBox.Value)
+            quant=3;
+        end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-            
-        I = I1(:,:,2);
         
-        I = (double(I)-128);
-        Block = blockproc(I,[8 8],dcthieu);
-        G2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
-        
-             
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- 
-                
-        I = I1(:,:,3);                
-               
-        I = (double(I)-128);
-        Block = blockproc(I,[8 8],dcthieu);
-        B2 = blockproc(Block,[8 8],@(x) round(x.data./q_mtx));
-        if(handles.checkbox2.Value)
-            R2 = blockproc(R2,[8 8],@(x) mask.*x.data);
-            G2 = blockproc(G2,[8 8],@(x) mask.*x.data);
-            B2 = blockproc(B2,[8 8],@(x) mask.*x.data);
-        end  
-          
-        %%%
-        N(:,:,:)= cat(3,R2,G2,B2); %Noi 3 kenh RGB lai voi nhau 
-        R = blockproc(R2,[8 8],@(x) round(x.data.*q_mtx));
-        G = blockproc(G2,[8 8],@(x) round(x.data.*q_mtx));
-        B = blockproc(B2,[8 8],@(x) round(x.data.*q_mtx));
-       
-        axes(handles.comImg);               
-        imshow(N); 
-        close(load);                      
-        toc;
-        set(handles.comTime,'String',num2str(toc));
-        [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
-        imwrite(N,[pathname,outputFile]);
-        %Giai nen
-        
-        R2 = uint8(blockproc(R,[8 8],idcthieu)+128);
-        
-        G2 = uint8(blockproc(G,[8 8],idcthieu)+128);
-        
-        B2 = uint8(blockproc(B,[8 8],idcthieu)+128);
-        N = cat(3,R2,G2,B2);
-        
-    else
-        I1 = imread(inputFile);
-        I = (double(I1)-128); % anh gray -128 -> 128 
+        imgint = imread(inputFile); 
+        imgint = rgb2gray(imgint);
+        [row,col] = size(imgint);
+        rows = row / 8;
+        cols = col / 8;
+        lastcode = ''; 
 
         
-        B = blockproc(I,[8 8],dcthieu); %bien doi dct
-        B2 = blockproc(B,[8 8],@(x) round(x.data./q_mtx)); % LUONG TU HOA
-        B3 = B2;
-        if(handles.checkbox2.Value)
-            B3 = blockproc(B2,[8 8],@(x) x.data*mask);
+        block = []; 
+        FormerDC = 0; 
+        for k = 1:rows
+            for l = 1:cols
+                block(1:8,1:8) = imgint((k-1)*8+1:k*8,(l-1)*8+1:l*8);
+                dct = JPEGDCT(block); 
+                if(handles.dct1.Value)
+                    dct = mask1(dct);
+                elseif(handles.dct10.Value)
+                    dct = mask10(dct);
+                end
+                q = JPEGQuantification(dct,quant); 
+                zz = Zigzag(q); 
+                strcode = JPEGEncode(zz,FormerDC); 
+                lastcode = [lastcode,strcode];
+                FormerDC = zz(1);
+            end
         end
-        close(load);          
-             
-        toc;
-        set(handles.comTime,'String',num2str(toc));  
-        axes(handles.comImg);               
-        imshow(B3);     
+        code = lastcode;
+        fid = fopen('output.txt','wt');
+        fprintf(fid,code);
+        fclose(fid);
         
-     
+        img = JPEGDecode(code,col,row,quant);
+        axes(handles.decomImg);
+        
+        imshow(img);
+        toc;
+        close(load);
         [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
-        imwrite(B3,[pathname,outputFile]);               
+        imwrite(img,[pathname,outputFile]);
+        set(handles.comTime,'String',num2str(toc));
+        info = imfinfo(fullfile(pathname,outputFile));
+        comImage =  (info.FileSize)/1024;       
+        set(handles.comImgSize,'String',comImage);  
+        comRat = ogImage/comImage;           
+        set(handles.comRatio,'String',comRat); 
+        mse = immse(imgint,img);
+        psnr = 10*log10(255*255/mse);
+        set(handles.tMSE,'String',mse);
+        set(handles.tPSNR,'String',psnr);
+        %h=imagesc(N);
+        %impixelregion(h);
+       
+            
+    else
+        imgint = imread(inputFile); 
+        [row,col] = size(imgint); 
+        rows = row / 8; 
+        cols = col / 8;
+        lastcode = ''; 
+
+        block = []; 
+        FormerDC = 0; 
+        for k = 1:rows
+            for l = 1:cols
+                block(1:8,1:8) = imgint((k-1)*8+1:k*8,(l-1)*8+1:l*8);
+                dct = JPEGDCT(block); 
+                q = JPEGQuantification(dct); 
+                zz = Zigzag(q); 
+                strcode = JPEGEncode(zz,FormerDC); 
+                lastcode = [lastcode,strcode];
+                FormerDC = zz(1);
+            end
+        end
+        code = lastcode;
+
+        img = JPEGDecode(code,col,row);
+        toc;
+        close(load);
+        axes(handles.decomImg);
+        imshow(img);
+        [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
+        imwrite(img,[pathname,outputFile]);       
+        
+        set(handles.comTime,'String',num2str(toc));
+        info = imfinfo(fullfile(pathname,outputFile));
+        comImage =  (info.FileSize)/1024;       
+        set(handles.comImgSize,'String',comImage);  
+        comRat = ogImage/comImage;           
+        set(handles.comRatio,'String',comRat); 
+        mse = immse(imgint,img);
+        psnr = 10*log10(255*255/mse);
+        set(handles.tMSE,'String',mse);
+        set(handles.tPSNR,'String',psnr);
+        %h=imagesc(N);
+        %impixelregion(h);
         
 end 
 end
@@ -232,10 +230,8 @@ end
 % --- Executes on button press in deleteButton.
 function deleteButton_Callback(hObject, eventdata, handles)
 cla(handles.ogImg,'reset');
-cla(handles.comImg,'reset');
 cla(handles.decomImg,'reset');
 set(handles.ogImg,'visible','off');
-set(handles.comImg,'visible','off');
 set(handles.decomImg,'visible','off');
 set(handles.comTime,'String','');
 set(handles.comRatio,'String','');
@@ -329,60 +325,6 @@ function checkBox_Callback(hObject, eventdata, handles)
 
 
 % --- Executes on button press in checkbox2.
-function checkbox2_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox2
-
-
-% --- Executes on button press in decomButton.
-function decomButton_Callback(hObject, eventdata, handles)
-global I1;
-global ogImage;
-global N;
-global outputFile;
-global comImage;
-global comRat;
-global q_mtx;
-global idcthieu;
-global B3;
-global R3;
-global G3;
-
-if(handles.checkBox.Value)
-
-    axes(handles.decomImg);               
-    imshow(N);  
-    [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                 
-       
-    imwrite(N,[pathname,outputFile]);               
-        
-    info = imfinfo(fullfile(pathname,outputFile));
-   
-    comImage =  (info.FileSize)/1024;     
-    set(handles.comImgSize,'String',comImage);     
-    comRat = ogImage/comImage;             
-    set(handles.comRatio,'String',comRat); 
-else
-    G3 = blockproc(B3,[8 8],@(x) round(x.data.*q_mtx));
-    N = uint8(blockproc(G3,[8 8],idcthieu)+128);
-    axes(handles.decomImg);
-    imshow(N)
-    [outputFile,pathname]=uiputfile({'*.jpg'},'Save IMG');                    
-    imwrite(N,[pathname,outputFile]);                      
-    info = imfinfo(fullfile(pathname,outputFile));
-    comImage =  (info.FileSize)/1024;       
-    set(handles.comImgSize,'String',comImage);  
-    comRat = ogImage/comImage;           
-    set(handles.comRatio,'String',comRat); 
-end
-mse = immse(I1,N);
-psnr = 10*log10(255*255/mse);
-set(handles.tMSE,'String',mse);
-set(handles.tPSNR,'String',psnr);
-
 
 
 function tMSE_Callback(hObject, eventdata, handles)
@@ -428,3 +370,48 @@ function tPSNR_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in luminance.
+function luminance_Callback(hObject, eventdata, handles)
+% hObject    handle to luminance (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of luminance
+
+
+% --- Executes on button press in chrominance.
+function chrominance_Callback(hObject, eventdata, handles)
+% hObject    handle to chrominance (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of chrominance
+
+
+% --- Executes on button press in dctBox.
+function dctBox_Callback(hObject, eventdata, handles)
+% hObject    handle to dctBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of dctBox
+
+
+% --- Executes on button press in dct1.
+function dct1_Callback(hObject, eventdata, handles)
+% hObject    handle to dct1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of dct1
+
+
+% --- Executes on button press in dct10.
+function dct10_Callback(hObject, eventdata, handles)
+% hObject    handle to dct10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of dct10
