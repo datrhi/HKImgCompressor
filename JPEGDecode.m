@@ -140,7 +140,7 @@ while 1
                 BlockCol = BlockCol + 1;
             end
             intBlock(1:64) = 0;
-            BlockRow,BlockCol
+            
         end 
         BlockPoint = BlockPoint + runlength + 1;
     end
